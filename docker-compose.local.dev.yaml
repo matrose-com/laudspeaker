@@ -1,0 +1,195 @@
+version: "3.7"
+services:
+  frontend:
+    image: laudspeaker-frontend
+    container_name: laudspeaker-frontend
+    build:
+      dockerfile: Dockerfile
+      context: ./packages/client/
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
+    networks:
+      - laudspeaker
+    volumes:
+      - ./packages/client/:/app
+      - /app/node_modules
+
+  backend:
+    image: laudspeaker-backend
+    container_name: laudspeaker-backend
+    build:
+      dockerfile: Dockerfile
+      context: ./packages/server/
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_NAME: postgres
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: password
+      DATABASE_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD:
+      MONGOOSE_URL: mongodb://mongo:27017/nest?directConnection=true
+      MONGO_DB_NAME: nest
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD:
+      KAFKA_BROKERS: kafka1:9092,kafka1:29092
+    ports:
+      - "3001:3001"
+    depends_on:
+      - redis
+      - postgres
+      - mongo
+      - kafka1
+      - kafka-connect1
+      - clickhouse
+    networks:
+      - laudspeaker
+    volumes:
+      - ./packages/server:/app
+      - /app/node_modules
+
+  redis:
+    image: redis:alpine
+    command: redis-server
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    networks:
+      - laudspeaker
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - ./.postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - laudspeaker
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    container_name: nest-pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=pgadmin4
+    ports:
+      - '5050:80'
+    depends_on:
+      - postgres
+    networks:
+      - laudspeaker
+
+  mongo:
+    image: "mongo:latest"
+    ports:
+      - "27017:27017"
+    networks:
+      - laudspeaker
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    restart: on-failure
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    networks:
+      - laudspeaker
+
+  #### START kafka related containers
+  zoo1:
+    image: bitnami/zookeeper:latest
+    hostname: zoo1
+    container_name: zoo1
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_SERVERS: zoo1:2888:3888
+      ALLOW_ANONYMOUS_LOGIN: yes
+    networks:
+      - laudspeaker
+
+  kafka1:
+    image: bitnami/kafka:3.6.0
+    hostname: kafka1
+    container_name: kafka1
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+    healthcheck:
+      test: kafka-cluster.sh cluster-id --bootstrap-server kafka1:19092 || exit 1
+      interval: 1s
+      timeout: 60s
+      retries: 60
+    environment:
+      KAFKA_CFG_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://kafka1:29092,DEV://kafka1:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://host.docker.internal:29092,DEV://localhost:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DEV:PLAINTEXT
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_PROTOCOL: PLAINTEXT
+      KAFKA_CFG_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_TLS_CLIENT_AUTH: none
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    depends_on:
+      - zoo1
+    networks:
+      - laudspeaker
+
+  # kafka-gui:
+  #   image: provectuslabs/kafka-ui
+  #   hostname: kafka-gui
+  #   container_name: kafak-gui
+  #   environment:
+  #     KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29092
+  #     KAFKA_CLUSTERS_0_NAME: local
+  #   ports:
+  #     - "1002:8080"
+  #   depends_on:
+  #     - kafka1
+  #   networks:
+  #     - laudspeaker
+  #### END kafka related containers
+
+  #### START kafka connect related containers
+  kafka-connect1:
+    image: bitnami/kafka:latest
+    hostname: kafka-connect1
+    container_name: kafka-connect1
+    healthcheck:
+      test: [ "CMD", "curl", "localhost:8083" ]
+      interval: 5s
+      timeout: 2s
+      retries: 20
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./local-env/kafkaconnect:/opt/bitnami/kafka-connect
+    depends_on:
+      kafka1:
+        condition: service_healthy
+    networks:
+      - laudspeaker
+    command:
+      - bash
+      - -c
+      - /opt/bitnami/kafka/bin/connect-distributed.sh /opt/bitnami/kafka-connect/connect.properties
+  #### END kafka connect related containers
+
+
+
+networks:
+  laudspeaker:
+    driver: bridge
+    name: laudspeaker

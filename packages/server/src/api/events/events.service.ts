@@ -371,7 +371,7 @@ export class EventsService {
 
     const totalPages =
       Math.ceil(
-        (await this.PosthogEventModel.count({
+        (await this.PosthogEventModel.countDocuments({
           name: searchRegExp,
           ownerId: (<Account>account).id,
         }).exec()) / take
@@ -495,7 +495,7 @@ export class EventsService {
     //console.log("events are", JSON.stringify(tehevents, null, 2))
 
     //console.log("events are", JSON.stringify(await this.EventModel.find(mongoQuery).exec(),null, 2));
-    const count = await this.EventModel.count(mongoQuery).exec();
+    const count = await this.EventModel.countDocuments(mongoQuery).exec();
     //console.log("count is", count);
     return count;
   }

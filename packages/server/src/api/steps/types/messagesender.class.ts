@@ -757,6 +757,7 @@ export class MessageSender {
           event: 'sent',
           createdAt: new Date().toISOString(),
           eventProvider: ClickHouseEventProvider.SLACK,
+          // @ts-ignore
           messageId: String(message.ts),
           stepId: stepID,
           customerId: customerID,

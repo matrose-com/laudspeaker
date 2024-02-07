@@ -18,7 +18,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       subscribers: [],
       synchronize: process.env.SYNCHRONIZE == 'true', // never use TRUE in production!
       autoLoadEntities: true,
-      // migrationsRun: true,
+      migrationsRun: true,
     };
   }
 }

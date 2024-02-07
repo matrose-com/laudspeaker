@@ -161,7 +161,7 @@ export class CustomersService {
     private readonly connection: mongoose.Connection,
     private readonly s3Service: S3Service,
     @Inject(JourneyLocationsService)
-    private readonly journeyLocationsService: JourneyLocationsService
+    private readonly journeyLocationsService: JourneyLocationsService,
   ) {
     const session = randomUUID();
     (async () => {
@@ -175,7 +175,7 @@ export class CustomersService {
             partialFilterExpression: {
               __posthog__id: { $exists: true, $type: 'array', $gt: [] },
             },
-          }
+          },
         );
       } catch (e) {
         this.error(e, CustomersService.name, session);
@@ -191,7 +191,7 @@ export class CustomersService {
         method: method,
         session: session,
         user: user,
-      })
+      }),
     );
   }
   debug(message, method, session, user = 'ANONYMOUS') {
@@ -202,7 +202,7 @@ export class CustomersService {
         method: method,
         session: session,
         user: user,
-      })
+      }),
     );
   }
   warn(message, method, session, user = 'ANONYMOUS') {
@@ -213,7 +213,7 @@ export class CustomersService {
         method: method,
         session: session,
         user: user,
-      })
+      }),
     );
   }
   error(error, method, session, user = 'ANONYMOUS') {
@@ -227,7 +227,7 @@ export class CustomersService {
         cause: error.cause,
         name: error.name,
         user: user,
-      })
+      }),
     );
   }
   verbose(message, method, session, user = 'ANONYMOUS') {
@@ -238,7 +238,7 @@ export class CustomersService {
         method: method,
         session: session,
         user: user,
-      })
+      }),
     );
   }
 
@@ -246,7 +246,7 @@ export class CustomersService {
     account: Account,
     createCustomerDto: CreateCustomerDto,
     session: string,
-    transactionSession?: ClientSession
+    transactionSession?: ClientSession,
   ): Promise<
     Customer &
       mongoose.Document & {
@@ -262,7 +262,7 @@ export class CustomersService {
     const ret = await createdCustomer.save({ session: transactionSession });
 
     for (const key of Object.keys(ret.toObject()).filter(
-      (item) => !KEYS_TO_SKIP.includes(item)
+      (item) => !KEYS_TO_SKIP.includes(item),
     )) {
       const value = ret[key];
       if (value === '' || value === undefined || value === null) continue;
@@ -286,7 +286,7 @@ export class CustomersService {
             workspaceId: workspace.id,
           },
         },
-        { upsert: true }
+        { upsert: true },
       ).exec();
     }
 
@@ -308,7 +308,7 @@ export class CustomersService {
     account: Account,
     criteria: any,
     transactionSession: ClientSession,
-    session: string
+    session: string,
   ): Promise<CustomerDocument[]> {
     let customers: CustomerDocument[] = [];
     const ret: CustomerDocument[] = [];
@@ -327,7 +327,7 @@ export class CustomersService {
     this.debug(
       `${JSON.stringify({ customers })}`,
       this.findByInclusionCriteriaTwo.name,
-      session
+      session,
     );
     for (const customer of customers) {
       if (
@@ -335,7 +335,7 @@ export class CustomersService {
           customer,
           criteria,
           session,
-          account
+          account,
         )
       )
         ret.push(customer);
@@ -398,15 +398,15 @@ export class CustomersService {
     key = '',
     search = '',
     showFreezed = false,
-    createdAtSortType: 'asc' | 'desc' = 'desc'
+    createdAtSortType: 'asc' | 'desc' = 'desc',
   ): Promise<{ data: CustomerDocument[]; totalPages: number }> {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
     const totalPages =
       Math.ceil(
-        (await this.CustomerModel.count({
+        (await this.CustomerModel.countDocuments({
           workspaceId: workspace.id,
-        }).exec()) / take
+        }).exec()) / take,
       ) || 1;
 
     const customers = await this.CustomerModel.find({
@@ -446,7 +446,7 @@ export class CustomersService {
   async transactionalFindOne(
     account: Account,
     id: string,
-    transactionSession: ClientSession
+    transactionSession: ClientSession,
   ) {
     if (!isValidObjectId(id))
       throw new HttpException('Id is not valid', HttpStatus.BAD_REQUEST);
@@ -472,7 +472,7 @@ export class CustomersService {
     customerId: string,
     session: string,
     page = 1,
-    pageSize = 10
+    pageSize = 10,
   ) {
     const offset = (page - 1) * pageSize;
 
@@ -516,7 +516,7 @@ export class CustomersService {
         LEFT JOIN "journey" as jr ON jr.id = step."journeyId"
         ORDER BY (ch::json->>'createdAt')::timestamp DESC;
       `,
-      [data]
+      [data],
     );
     const result = updatedData.map((el) => el.ch);
 
@@ -531,7 +531,7 @@ export class CustomersService {
 
   addPrefixToKeys(
     obj: Record<string, any>,
-    prefix: string
+    prefix: string,
   ): Record<string, any> {
     const newObj: Record<string, any> = {};
 
@@ -561,7 +561,7 @@ export class CustomersService {
     account: Account,
     identifyEvent: any,
     transactionSession: ClientSession,
-    session: string
+    session: string,
   ): Promise<boolean> {
     let query: any;
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
@@ -585,7 +585,7 @@ export class CustomersService {
         `Preexisting customers query: ${JSON.stringify({ query: query })}`,
         this.phIdentifyUpdate.name,
         session,
-        account.id
+        account.id,
       );
 
       const addedBefore = await this.CustomerModel.find(query)
@@ -599,7 +599,7 @@ export class CustomersService {
           })}`,
           this.phIdentifyUpdate.name,
           session,
-          account.id
+          account.id,
         );
 
         query = {
@@ -624,14 +624,14 @@ export class CustomersService {
           `Update one customer query: ${JSON.stringify({ query: query })}`,
           this.phIdentifyUpdate.name,
           session,
-          account.id
+          account.id,
         );
 
         const res = await this.CustomerModel.updateOne(
           {
             _id: new mongoose.Types.ObjectId(addedBefore[0].id),
           },
-          query
+          query,
         )
           .session(transactionSession)
           .exec();
@@ -641,7 +641,7 @@ export class CustomersService {
           })}`,
           this.phIdentifyUpdate.name,
           session,
-          account.id
+          account.id,
         );
         return true;
       } else if (addedBefore.length === 0) {
@@ -666,7 +666,7 @@ export class CustomersService {
           `Create one customer query: ${JSON.stringify({ query: query })}`,
           this.phIdentifyUpdate.name,
           session,
-          account.id
+          account.id,
         );
         const createdCustomer = new this.CustomerModel(query);
         const res = await createdCustomer.save({ session: transactionSession });
@@ -674,17 +674,17 @@ export class CustomersService {
           `Created new customer on Identify event: ${JSON.stringify(res)}`,
           this.phIdentifyUpdate.name,
           session,
-          account.id
+          account.id,
         );
         return false;
       } else {
         this.warn(
           `Found multiple customers with same posthog ID, skipping Identify event update: ${JSON.stringify(
-            { customers: addedBefore }
+            { customers: addedBefore },
           )}`,
           this.phIdentifyUpdate.name,
           session,
-          account.id
+          account.id,
         );
       }
     } catch (e) {
@@ -697,7 +697,7 @@ export class CustomersService {
     account: Account,
     id: string,
     updateCustomerDto: Record<string, unknown>,
-    session: string
+    session: string,
   ) {
     const { ...newCustomerData } = updateCustomerDto;
 
@@ -716,7 +716,7 @@ export class CustomersService {
     }
 
     for (const key of Object.keys(newCustomerData).filter(
-      (item) => !KEYS_TO_SKIP.includes(item)
+      (item) => !KEYS_TO_SKIP.includes(item),
     )) {
       const value = newCustomerData[key];
       if (value === '' || value === undefined || value === null) continue;
@@ -740,7 +740,7 @@ export class CustomersService {
             workspaceId: workspace.id,
           },
         },
-        { upsert: true }
+        { upsert: true },
       ).exec();
     }
 
@@ -750,12 +750,12 @@ export class CustomersService {
       Object.entries({
         ...customer,
         ...newCustomerData,
-      }).filter(([_, v]) => v != null)
+      }).filter(([_, v]) => v != null),
     );
 
     const replacementRes = await this.CustomerModel.findByIdAndUpdate(
       { _id: id },
-      newCustomer
+      newCustomer,
     ).exec();
 
     return replacementRes;
@@ -766,7 +766,7 @@ export class CustomersService {
     id: string,
     session: string,
     updateCustomerDto: Record<string, unknown>,
-    transactionSession: ClientSession
+    transactionSession: ClientSession,
   ) {
     try {
       const { ...newCustomerData } = updateCustomerDto;
@@ -782,7 +782,7 @@ export class CustomersService {
       const customer = await this.transactionalFindOne(
         account,
         id,
-        transactionSession
+        transactionSession,
       );
 
       if (customer.isFreezed)
@@ -793,7 +793,7 @@ export class CustomersService {
       }
 
       for (const key of Object.keys(newCustomerData).filter(
-        (item) => !KEYS_TO_SKIP.includes(item)
+        (item) => !KEYS_TO_SKIP.includes(item),
       )) {
         const value = newCustomerData[key];
         if (value === '' || value === undefined || value === null) continue;
@@ -817,7 +817,7 @@ export class CustomersService {
               workspaceId: workspace.id,
             },
           },
-          { upsert: true }
+          { upsert: true },
         )
           .session(transactionSession)
           .exec();
@@ -827,7 +827,7 @@ export class CustomersService {
         Object.entries({
           ...customer,
           ...newCustomerData,
-        }).filter(([_, v]) => v != null)
+        }).filter(([_, v]) => v != null),
       );
 
       await this.CustomerModel.replaceOne({ _id: id }, newCustomer)
@@ -849,7 +849,7 @@ export class CustomersService {
     searchKey?: string,
     searchValue?: string,
     showFreezed?: boolean,
-    createdAtSortType?: 'asc' | 'desc'
+    createdAtSortType?: 'asc' | 'desc',
   ) {
     const { data, totalPages } = await this.findAll(
       <Account>account,
@@ -858,7 +858,7 @@ export class CustomersService {
       searchKey,
       searchValue,
       showFreezed,
-      createdAtSortType || 'desc'
+      createdAtSortType || 'desc',
     );
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -883,7 +883,7 @@ export class CustomersService {
         info.email = person.email || person.phEmail;
         info.phone = person.phone;
         info.createdAt = new Date(
-          parseInt(person._id.toString().slice(0, 8), 16) * 1000
+          parseInt(person._id.toString().slice(0, 8), 16) * 1000,
         ).toUTCString();
         info.dataSource = 'people';
 
@@ -895,11 +895,11 @@ export class CustomersService {
           info.isInsideSegment = await this.segmentsService.isCustomerMemberOf(
             account,
             checkInSegment,
-            person.id
+            person.id,
           );
 
         return info;
-      })
+      }),
     );
 
     return { data: listInfo, totalPages, pkName: pk?.key };
@@ -911,7 +911,7 @@ export class CustomersService {
     take = 100,
     skip = 0,
     event?: string,
-    audienceId?: string
+    audienceId?: string,
   ) {
     if (take > 100) take = 100;
 
@@ -941,7 +941,7 @@ export class CustomersService {
           customerIds.map(async (id) => ({
             ...(await this.findById(account, id))?.toObject(),
             id,
-          }))
+          })),
         ),
       };
     }
@@ -952,7 +952,7 @@ export class CustomersService {
     phAuth: string,
     phUrl: string,
     account: Account,
-    session: string
+    session: string,
   ) {
     let posthogUrl: string;
     if (phUrl[phUrl.length - 1] == '/') {
@@ -974,7 +974,7 @@ export class CustomersService {
 
   async findByAudience(
     account: Account,
-    audienceId: string
+    audienceId: string,
   ): Promise<CustomerDocument[]> {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -999,7 +999,7 @@ export class CustomersService {
   async findById(
     account: Account,
     customerId: string,
-    clientSession?: ClientSession
+    clientSession?: ClientSession,
   ): Promise<
     Customer &
       mongoose.Document & {
@@ -1022,7 +1022,7 @@ export class CustomersService {
 
   async findBySlackId(
     account: Account,
-    slackId: string
+    slackId: string,
   ): Promise<CustomerDocument> {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -1036,7 +1036,7 @@ export class CustomersService {
 
   async findByExternalIdOrCreate(
     account: Account,
-    id: string
+    id: string,
   ): Promise<CustomerDocument> {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -1089,7 +1089,7 @@ export class CustomersService {
     event: any,
     transactionSession: ClientSession,
     session: string,
-    mapping?: (event: any) => any
+    mapping?: (event: any) => any,
   ): Promise<Correlation> {
     let customer, createdCustomer: CustomerDocument;
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
@@ -1113,7 +1113,7 @@ export class CustomersService {
       })}`,
       this.findBySpecifiedEvent.name,
       session,
-      account.id
+      account.id,
     );
     customer = await this.CustomerModel.findOne(queryParam)
       .session(transactionSession)
@@ -1123,7 +1123,7 @@ export class CustomersService {
         `Customer not found, creating new customer...`,
         this.findBySpecifiedEvent.name,
         session,
-        account.id
+        account.id,
       );
       if (mapping) {
         const newCust = mapping(event);
@@ -1144,7 +1144,7 @@ export class CustomersService {
         `Created new customer ${JSON.stringify(createdCustomer)}`,
         this.findBySpecifiedEvent.name,
         session,
-        account.id
+        account.id,
       );
       return {
         cust: await createdCustomer.save({ session: transactionSession }),
@@ -1156,7 +1156,7 @@ export class CustomersService {
         `Customer found: ${JSON.stringify(customer)}`,
         this.findBySpecifiedEvent.name,
         session,
-        account.id
+        account.id,
       );
       const updateObj: any = mapping ? mapping(event) : undefined;
       if (Array.isArray(correlationValue)) {
@@ -1170,7 +1170,7 @@ export class CustomersService {
       }
       customer = await this.CustomerModel.findOneAndUpdate(
         queryParam,
-        updateObj
+        updateObj,
       )
         .session(transactionSession)
         .exec();
@@ -1178,7 +1178,7 @@ export class CustomersService {
         `Customer updated: ${JSON.stringify(customer)}`,
         this.findBySpecifiedEvent.name,
         session,
-        account.id
+        account.id,
       );
       return { cust: customer, found: true };
     }
@@ -1206,7 +1206,7 @@ export class CustomersService {
     session: string,
     transactionSession?: ClientSession,
     skip?: number,
-    limit?: number
+    limit?: number,
   ): Promise<CustomerDocument[]> {
     let query: any;
     this.accountsRepository;
@@ -1255,10 +1255,10 @@ export class CustomersService {
     customers: CustomerDocument[],
     journeyID: string,
     session: string,
-    transactionSession?: ClientSession
+    transactionSession?: ClientSession,
   ) {
     const unenrolledCustomers = customers.filter(
-      (customer) => customer.journeys.indexOf(journeyID) < 0
+      (customer) => customer.journeys.indexOf(journeyID) < 0,
     );
     const query = this.CustomerModel.updateMany(
       {
@@ -1271,7 +1271,7 @@ export class CustomersService {
         $set: {
           [`journeyEnrollmentsDates.${journeyID}`]: new Date().toUTCString(),
         },
-      }
+      },
     );
     if (transactionSession) query.session(transactionSession);
 
@@ -1297,7 +1297,7 @@ export class CustomersService {
     account: Account,
     criteria: any,
     session: string,
-    transactionSession?: ClientSession
+    transactionSession?: ClientSession,
   ): Promise<number> {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -1323,7 +1323,7 @@ export class CustomersService {
       `${JSON.stringify({ audienceSize: count })}`,
       this.getAudienceSize.name,
       session,
-      account.email
+      account.email,
     );
 
     return count;
@@ -1333,13 +1333,13 @@ export class CustomersService {
     customer: CustomerDocument,
     inclusionCriteria: any,
     session: string,
-    account?: Account
+    account?: Account,
   ) {
     return this.audiencesHelper.checkInclusion(
       customer,
       inclusionCriteria,
       session,
-      account
+      account,
     );
   }
 
@@ -1360,7 +1360,7 @@ export class CustomersService {
     correlationKey: string,
     correlationValue: string | string[],
     session: string,
-    transactionSession?: ClientSession
+    transactionSession?: ClientSession,
   ): Promise<CustomerDocument> {
     let customer: CustomerDocument; // Found customer
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
@@ -1392,7 +1392,7 @@ export class CustomersService {
         err,
         this.findByCorrelationKVPair.name,
         session,
-        account.email
+        account.email,
       );
       return Promise.reject(err);
     }
@@ -1402,7 +1402,7 @@ export class CustomersService {
   async findOrCreateByCorrelationKVPair(
     account: Account,
     dto: EventDto,
-    transactionSession: ClientSession
+    transactionSession: ClientSession,
   ): Promise<Correlation> {
     let customer: CustomerDocument; // Found customer
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
@@ -1437,7 +1437,7 @@ export class CustomersService {
   async upsert(
     account: Account,
     upsertCustomerDto: UpsertCustomerDto,
-    session: string
+    session: string,
   ): Promise<{ id: string }> {
     const transactionSession = await this.connection.startSession();
     transactionSession.startTransaction();
@@ -1463,7 +1463,7 @@ export class CustomersService {
       if (!primaryKey)
         throw new HttpException(
           'Primary key has not been set: see https://laudspeaker.com/docs/developer/api/users/upsert for more details.',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
 
       const existingCustomer = await this.CustomerModel.findOne({
@@ -1485,7 +1485,7 @@ export class CustomersService {
             $set: {
               ...upsertCustomerDto.properties,
             },
-          }
+          },
         )
           .session(transactionSession)
           .exec();
@@ -1499,7 +1499,7 @@ export class CustomersService {
               ...upsertCustomerDto.properties,
             },
           ],
-          { session: transactionSession }
+          { session: transactionSession },
         );
         returnID = res[0].id;
       }
@@ -1522,7 +1522,7 @@ export class CustomersService {
   async mergeCustomers(
     account: Account,
     oldCustomer: any,
-    newCustomer: any
+    newCustomer: any,
   ): Promise<void> {
     //we assume newer information is more up to date
     oldCustomer.slackName = newCustomer.name;
@@ -1562,7 +1562,7 @@ export class CustomersService {
       `Removing customer ${JSON.stringify({ id: custId })}`,
       this.removeById.name,
       session,
-      account.id
+      account.id,
     );
 
     const cust = await this.CustomerModel.findById(custId);
@@ -1570,7 +1570,7 @@ export class CustomersService {
       `Found customer ${JSON.stringify(cust)}`,
       this.removeById.name,
       session,
-      account.id
+      account.id,
     );
 
     if (cust.isFreezed) throw new BadRequestException('Customer is freezed');
@@ -1582,7 +1582,7 @@ export class CustomersService {
       `Deleted customer ${JSON.stringify(res)}`,
       this.removeById.name,
       session,
-      account.id
+      account.id,
     );
   }
 
@@ -1606,7 +1606,7 @@ export class CustomersService {
     }
 
     const attribute = attributes.find(
-      (attribute) => attribute.key === resourceId
+      (attribute) => attribute.key === resourceId,
     );
     if (attribute)
       return {
@@ -1649,7 +1649,7 @@ export class CustomersService {
   async uploadCSV(
     account: Account,
     csvFile: Express.Multer.File,
-    session: string
+    session: string,
   ) {
     if (csvFile?.mimetype !== 'text/csv')
       throw new BadRequestException('Only CSV files are allowed');
@@ -1706,7 +1706,7 @@ export class CustomersService {
 
       if (primaryAttribute && !res.headers.includes(primaryAttribute.key)) {
         throw new BadRequestException(
-          `CSV file should contain column with same name as defined Primary key: ${primaryAttribute.key}`
+          `CSV file should contain column with same name as defined Primary key: ${primaryAttribute.key}`,
         );
       }
 
@@ -1732,7 +1732,7 @@ export class CustomersService {
 
       const { key } = await this.s3Service.uploadCustomerImportFile(
         csvFile,
-        account
+        account,
       );
       const fName = csvFile?.originalname || 'Unknown name';
 
@@ -1770,7 +1770,7 @@ export class CustomersService {
     } catch (error) {
       this.error(error, this.deleteImportFile.name, session);
       throw new BadRequestException(
-        `Error getting last importedCSV, account ${account.id}, sessions:${session}`
+        `Error getting last importedCSV, account ${account.id}, sessions:${session}`,
       );
     }
   }
@@ -1797,7 +1797,7 @@ export class CustomersService {
     } catch (error) {
       this.error(error, this.getLastImportCSV.name, session);
       throw new BadRequestException(
-        `Error getting last importedCSV, account ${account.id}, sessions:${session}`
+        `Error getting last importedCSV, account ${account.id}, sessions:${session}`,
       );
     }
   }
@@ -1814,7 +1814,7 @@ export class CustomersService {
       this.warn(
         "Can't find imported file for deletion.",
         this.removeImportFile.name,
-        ''
+        '',
       );
       return;
     }
@@ -1827,7 +1827,7 @@ export class CustomersService {
   async loadCSV(
     account: Account,
     csvFile: Express.Multer.File,
-    session: string
+    session: string,
   ) {
     if (csvFile.mimetype !== 'text/csv')
       throw new BadRequestException('Only CSV files are allowed');
@@ -1879,31 +1879,31 @@ export class CustomersService {
       await transactionManager.delete(SegmentCustomers, { customerId: id });
       await transactionManager.query(
         'UPDATE audience SET customers = array_remove(audience."customers", $1) WHERE $2 = ANY(audience."customers")',
-        [id, id]
+        [id, id],
       );
     });
   }
 
   public async getDynamicAudiencesWithCustomer(
-    customerId: string
+    customerId: string,
   ): Promise<Audience[]> {
     return this.dataSource.query(
       'SELECT * FROM audience WHERE $1 = ANY(audience."customers") AND (SELECT workflow."isDynamic" FROM workflow WHERE workflow."id" = audience."workflowId") = true',
-      [customerId]
+      [customerId],
     );
   }
 
   public async recheckDynamicInclusion(
     account: Account,
     customer: CustomerDocument,
-    session: string
+    session: string,
   ) {
     const audiences = await this.getDynamicAudiencesWithCustomer(customer.id);
     for (const audience of audiences) {
       const inclusionCriteria = await this.audiencesService.getFilter(
         account,
         audience.id,
-        session
+        session,
       );
 
       if (!inclusionCriteria) continue;
@@ -1916,7 +1916,7 @@ export class CustomersService {
           customer,
           inclusionCriteria,
           session,
-          account
+          account,
         ))
       ) {
         audience.customers.splice(custIndex, 1);
@@ -1927,7 +1927,7 @@ export class CustomersService {
       audiences.map((audience) => ({
         id: audience.id,
         customers: audience.customers,
-      }))
+      })),
     );
   }
 
@@ -1937,7 +1937,7 @@ export class CustomersService {
     key = '',
     type?: string | string[],
     isArray?: boolean,
-    removeLimit?: boolean
+    removeLimit?: boolean,
   ) {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -1949,8 +1949,8 @@ export class CustomersService {
           ...(type !== null && !(type instanceof Array)
             ? { type }
             : type instanceof Array
-            ? { $or: type.map((el) => ({ type: el })) }
-            : {}),
+              ? { $or: type.map((el) => ({ type: el })) }
+              : {}),
           ...(isArray !== null ? { isArray } : {}),
         },
       ],
@@ -1982,7 +1982,7 @@ export class CustomersService {
     take = 100,
     skip = 0,
     event?: string,
-    stepId?: string
+    stepId?: string,
   ) {
     if (take > 100) take = 100;
 
@@ -2012,7 +2012,7 @@ export class CustomersService {
           customerIds.map(async (id) => ({
             ...(await this.findById(account, id))?.toObject(),
             id,
-          }))
+          })),
         ),
       };
     }
@@ -2060,7 +2060,7 @@ export class CustomersService {
     account: Account,
     stepId: string,
     take = 100,
-    skip = 0
+    skip = 0,
   ) {
     if (take > 100) take = 100;
 
@@ -2079,7 +2079,7 @@ export class CustomersService {
         if (!customer) return undefined;
 
         return { id: customer.id, email: customer.email };
-      })
+      }),
     );
 
     return {
@@ -2093,7 +2093,7 @@ export class CustomersService {
     customer: CustomerDocument,
     journey: Journey,
     session: string,
-    queryRunner: QueryRunner
+    queryRunner: QueryRunner,
   ) {
     // TODO_JH: update to journey location table as source of truth
     const location = await this.journeyLocationsService.find(
@@ -2101,7 +2101,7 @@ export class CustomersService {
       customer,
       session,
       account,
-      queryRunner
+      queryRunner,
     );
     return !!location;
   }
@@ -2110,7 +2110,7 @@ export class CustomersService {
     user: Account,
     custId: string,
     take: number,
-    skip: number
+    skip: number,
   ) {
     const workspace = user?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -2179,12 +2179,12 @@ export class CustomersService {
         LEFT JOIN step ON step."journeyId" = jr.id 
         WHERE jr.id = ANY($1);
       `,
-      [customer.journeys]
+      [customer.journeys],
     );
 
     const data = await this.dataSource.query<JourneyDataForTimeLine[]>(
       queryText,
-      [customer.id, customer.journeys, take, skip]
+      [customer.id, customer.journeys, take, skip],
     );
 
     return {
@@ -2201,7 +2201,7 @@ export class CustomersService {
 
     const totalNumberOfCustomers = this.CustomerModel.find({
       workspaceId: workspace.id,
-    }).count();
+    }).countDocuments();
 
     return totalNumberOfCustomers;
   }
@@ -2223,12 +2223,12 @@ export class CustomersService {
     session: string,
     topLevel: boolean,
     count: number,
-    intermediateCollection?: string
+    intermediateCollection?: string,
   ): Promise<string> {
     this.debug(
       'Creating segment from query',
       this.CountCustomersFromAndQuery.name,
-      session
+      session,
     );
 
     //create collectionName
@@ -2256,27 +2256,27 @@ export class CustomersService {
             account,
             session,
             count++,
-            collectionName + count
+            collectionName + count,
           );
-        })
+        }),
       );
       this.debug(
         `the sets are: ${sets}`,
         this.getSegmentCustomersFromQuery.name,
         session,
-        account.id
+        account.id,
       );
       this.debug(
         `about to reduce the sets`,
         this.getSegmentCustomersFromQuery.name,
         session,
-        account.id
+        account.id,
       );
       this.debug(
         `the sets length: ${sets.length}`,
         this.getSegmentCustomersFromQuery.name,
         session,
-        account.id
+        account.id,
       );
       const unionAggregation: any[] = [];
       //if (sets.length > 1) {
@@ -2289,7 +2289,7 @@ export class CustomersService {
       unionAggregation.push(
         { $group: { _id: '$_id', count: { $sum: 1 } } },
         //{ $group: { _id: "$customerId", count: { $sum: 1 } } },
-        { $match: { count: sets.length } } // Match only IDs present in all subqueries
+        { $match: { count: sets.length } }, // Match only IDs present in all subqueries
       );
       //} else if (sets.length === 1) {
       //  console.log("sets length 1");
@@ -2316,7 +2316,7 @@ export class CustomersService {
               `trying to release collection`,
               this.getSegmentCustomersFromQuery.name,
               session,
-              account.id
+              account.id,
             );
             //toggle this line for testing
             await this.connection.db.collection(collection).drop();
@@ -2324,14 +2324,14 @@ export class CustomersService {
               `dropped successfully`,
               this.getSegmentCustomersFromQuery.name,
               session,
-              account.id
+              account.id,
             );
           } catch (e) {
             this.debug(
               `error dropping collection: ${e}`,
               this.getSegmentCustomersFromQuery.name,
               session,
-              account.id
+              account.id,
             );
           }
         });
@@ -2384,19 +2384,19 @@ export class CustomersService {
     session: string,
     topLevel: boolean,
     count: number,
-    intermediateCollection?: string
+    intermediateCollection?: string,
   ): Promise<string> {
     this.debug(
       'Creating segment from query',
       this.getSegmentCustomersFromQuery.name,
-      session
+      session,
     );
 
     this.debug(
       `top level query is: ${JSON.stringify(query, null, 2)}`,
       this.getSegmentCustomersFromQuery.name,
       session,
-      account.id
+      account.id,
     );
 
     //create collectionName
@@ -2424,27 +2424,27 @@ export class CustomersService {
             account,
             session,
             count++,
-            collectionName + count
+            collectionName + count,
           );
-        })
+        }),
       );
       this.debug(
         `the sets are: ${sets}`,
         this.getSegmentCustomersFromQuery.name,
         session,
-        account.id
+        account.id,
       );
       this.debug(
         `about to reduce the sets`,
         this.getSegmentCustomersFromQuery.name,
         session,
-        account.id
+        account.id,
       );
       this.debug(
         `the sets length: ${sets.length}`,
         this.getSegmentCustomersFromQuery.name,
         session,
-        account.id
+        account.id,
       );
       const unionAggregation: any[] = [];
       //if (sets.length > 1) {
@@ -2457,7 +2457,7 @@ export class CustomersService {
       unionAggregation.push(
         { $group: { _id: '$_id', count: { $sum: 1 } } },
         //{ $group: { _id: "$customerId", count: { $sum: 1 } } },
-        { $match: { count: sets.length } } // Match only IDs present in all subqueries
+        { $match: { count: sets.length } }, // Match only IDs present in all subqueries
       );
       //} else if (sets.length === 1) {
       //  console.log("sets length 1");
@@ -2484,7 +2484,7 @@ export class CustomersService {
               `trying to release collection`,
               this.getSegmentCustomersFromQuery.name,
               session,
-              account.id
+              account.id,
             );
             //toggle for testing to do
             await this.connection.db.collection(collection).drop();
@@ -2492,14 +2492,14 @@ export class CustomersService {
               `dropped successfully`,
               this.getSegmentCustomersFromQuery.name,
               session,
-              account.id
+              account.id,
             );
           } catch (e) {
             this.debug(
               `error dropping collection: ${e}`,
               this.getSegmentCustomersFromQuery.name,
               session,
-              account.id
+              account.id,
             );
           }
         });
@@ -2519,9 +2519,9 @@ export class CustomersService {
             account,
             session,
             count++,
-            collectionName + count
+            collectionName + count,
           );
-        })
+        }),
       );
 
       const unionAggregation: any[] = [];
@@ -2535,19 +2535,19 @@ export class CustomersService {
         `the sets are: ${sets}`,
         this.getSegmentCustomersFromQuery.name,
         session,
-        account.id
+        account.id,
       );
       this.debug(
         `about to union the sets`,
         this.getSegmentCustomersFromQuery.name,
         session,
-        account.id
+        account.id,
       );
       this.debug(
         `the sets length: ${sets.length}`,
         this.getSegmentCustomersFromQuery.name,
         session,
-        account.id
+        account.id,
       );
 
       // Add each additional collection to the pipeline
@@ -2577,7 +2577,7 @@ export class CustomersService {
               `trying to release collection`,
               this.getSegmentCustomersFromQuery.name,
               session,
-              account.id
+              account.id,
             );
             //toggle to do
             await this.connection.db.collection(collection).drop();
@@ -2585,14 +2585,14 @@ export class CustomersService {
               `dropped successfully`,
               this.getSegmentCustomersFromQuery.name,
               session,
-              account.id
+              account.id,
             );
           } catch (e) {
             this.debug(
               `error dropping collection: ${e}`,
               this.getSegmentCustomersFromQuery.name,
               session,
-              account.id
+              account.id,
             );
           }
         });
@@ -2615,7 +2615,7 @@ export class CustomersService {
     account: Account,
     session: string,
     count: number,
-    intermediateCollection: string
+    intermediateCollection: string,
   ) {
     if (statement.statements && statement.statements.length > 0) {
       // Statement has a subquery, recursively evaluate the subquery
@@ -2623,7 +2623,7 @@ export class CustomersService {
         `recursive subquery call`,
         this.getSegmentCustomersFromSubQuery.name,
         session,
-        account.id
+        account.id,
       );
       return this.getSegmentCustomersFromQuery(
         statement,
@@ -2631,21 +2631,21 @@ export class CustomersService {
         session,
         false,
         count,
-        intermediateCollection
+        intermediateCollection,
       );
     } else {
       this.debug(
         `singleStatement call`,
         this.getSegmentCustomersFromSubQuery.name,
         session,
-        account.id
+        account.id,
       );
       return await this.getCustomersFromStatement(
         statement,
         account,
         session,
         count,
-        intermediateCollection
+        intermediateCollection,
       );
     }
   }
@@ -2663,7 +2663,7 @@ export class CustomersService {
     account: Account,
     session: string,
     count: number,
-    intermediateCollection: string
+    intermediateCollection: string,
   ) {
     const {
       key,
@@ -2678,38 +2678,38 @@ export class CustomersService {
       'In getCustomersFromStatement deciding which sub evaluate statement to go to next/n\n',
       this.getCustomersFromStatement.name,
       session,
-      account.email
+      account.email,
     );
     this.debug(
       `the key is: ${JSON.stringify(key, null, 2)}`,
       this.getCustomersFromStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `the type is: ${JSON.stringify(type, null, 2)}`,
       this.getCustomersFromStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `the value is: ${JSON.stringify(value, null, 2)}`,
       this.getCustomersFromStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `the subComparisonValue is: ${JSON.stringify(
         subComparisonValue,
         null,
-        2
+        2,
       )}`,
       this.getCustomersFromStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     switch (type) {
@@ -2719,7 +2719,7 @@ export class CustomersService {
           account,
           session,
           count,
-          intermediateCollection
+          intermediateCollection,
         );
         break;
       case 'Event':
@@ -2728,7 +2728,7 @@ export class CustomersService {
           account,
           session,
           count,
-          intermediateCollection
+          intermediateCollection,
         );
       case 'Email':
         return this.customersFromMessageStatement(
@@ -2737,7 +2737,7 @@ export class CustomersService {
           'Email',
           session,
           count,
-          intermediateCollection
+          intermediateCollection,
         );
       case 'Push':
         return this.customersFromMessageStatement(
@@ -2746,7 +2746,7 @@ export class CustomersService {
           'Push',
           session,
           count,
-          intermediateCollection
+          intermediateCollection,
         );
       case 'SMS':
         return this.customersFromMessageStatement(
@@ -2755,7 +2755,7 @@ export class CustomersService {
           'SMS',
           session,
           count,
-          intermediateCollection
+          intermediateCollection,
         );
       case 'In-app message':
         return this.customersFromMessageStatement(
@@ -2764,7 +2764,7 @@ export class CustomersService {
           'In-app message',
           session,
           count,
-          intermediateCollection
+          intermediateCollection,
         );
       case 'Segment':
         return this.customersFromSegmentStatement(
@@ -2772,7 +2772,7 @@ export class CustomersService {
           account,
           session,
           count,
-          intermediateCollection
+          intermediateCollection,
         );
         break;
       default:
@@ -2796,7 +2796,7 @@ export class CustomersService {
     account: Account,
     session: string,
     count: number,
-    intermediateCollection: string
+    intermediateCollection: string,
   ) {
     const { type, segmentId } = statement;
     const collectionOfCustomersFromSegment =
@@ -2804,7 +2804,7 @@ export class CustomersService {
         account,
         session,
         segmentId,
-        intermediateCollection
+        intermediateCollection,
       );
     return collectionOfCustomersFromSegment;
   }
@@ -2822,7 +2822,7 @@ export class CustomersService {
   async getJourneysWithTag(
     account: Account,
     session: string,
-    tag: string
+    tag: string,
   ): Promise<string[]> {
     console.log('In getJourneysWithTag', tag);
     const queryRunner = this.dataSource.createQueryRunner();
@@ -2906,7 +2906,7 @@ export class CustomersService {
    */
 
   async getKeysAndTypes(
-    workspaceId: string
+    workspaceId: string,
   ): Promise<{ key: string; type: AttributeType }[]> {
     const customerKeys = await this.CustomerKeysModel.find({
       workspaceId,
@@ -2977,28 +2977,28 @@ export class CustomersService {
     typeOfMessage: string,
     session: string,
     count: number,
-    intermediateCollection: string
+    intermediateCollection: string,
   ) {
     const userId = (<Account>account).id;
     this.debug(
       'In get customers from message statement',
       this.customersFromMessageStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `the type of message is: ${typeOfMessage}`,
       this.customersFromMessageStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `account id is: ${userId}`,
       this.customersFromMessageStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     const {
@@ -3042,7 +3042,7 @@ export class CustomersService {
         StepType.MESSAGE,
         journeyId,
         queryRunner,
-        session
+        session,
       );
       stepIds.push(...steps.map((step) => step.id));
     }
@@ -3133,7 +3133,7 @@ export class CustomersService {
         `the final SQL query is:\n${sqlQuery}`,
         this.customersFromMessageStatement.name,
         session,
-        account.id
+        account.id,
       );
 
       const countEvents = await this.clickhouseClient.query({
@@ -3145,10 +3145,10 @@ export class CustomersService {
         `creating collection`,
         this.customersFromMessageStatement.name,
         session,
-        account.id
+        account.id,
       );
       const collectionHandle = this.connection.db.collection(
-        intermediateCollection
+        intermediateCollection,
       );
       const batchSize = 1000; // Define batch size
       let batch = [];
@@ -3227,7 +3227,7 @@ export class CustomersService {
             'Completed!',
             this.customersFromMessageStatement.name,
             session,
-            account.id
+            account.id,
           );
 
           //console.log("intermediate collection is", intermediateCollection );
@@ -3264,7 +3264,7 @@ export class CustomersService {
     valueType: string,
     value: any,
     account: Account,
-    session: string
+    session: string,
   ) {
     switch (valueType) {
       case 'Number':
@@ -3291,7 +3291,7 @@ export class CustomersService {
             'Error parsing object\n',
             this.correctValueType.name,
             session,
-            account.id
+            account.id,
           );
           return null;
         }
@@ -3300,7 +3300,7 @@ export class CustomersService {
           'unrecognised value type\n',
           this.correctValueType.name,
           session,
-          account.id
+          account.id,
         );
         return value;
     }
@@ -3321,7 +3321,7 @@ export class CustomersService {
     account: Account,
     session: string,
     count: number,
-    intermediateCollection: string
+    intermediateCollection: string,
   ) {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -3330,7 +3330,7 @@ export class CustomersService {
       'generating attribute mongo query\n',
       this.customersFromAttributeStatement.name,
       session,
-      account.id
+      account.id,
     );
     const {
       key,
@@ -3348,28 +3348,28 @@ export class CustomersService {
       `key is: ${key}`,
       this.customersFromAttributeStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `comparison type is: ${comparisonType}`,
       this.customersFromAttributeStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `value is: ${value}`,
       this.customersFromAttributeStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `value type is: ${typeof value}`,
       this.customersFromAttributeStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     switch (comparisonType) {
@@ -3432,28 +3432,28 @@ export class CustomersService {
       ` generated attribute query is: ${JSON.stringify(query, null, 2)}`,
       this.customersFromAttributeStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       'now grabbing customers with the query',
       this.customersFromAttributeStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       'in the aggregate construction - attribute',
       this.customersFromAttributeStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `creating collection`,
       this.customersFromAttributeStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.connection.db.collection(intermediateCollection);
@@ -3476,7 +3476,7 @@ export class CustomersService {
       `Here are the docs: ${JSON.stringify(docs, null, 2)}`,
       this.customersFromAttributeStatement.name,
       session,
-      account.id
+      account.id,
     );
     return intermediateCollection;
     /*
@@ -3515,7 +3515,7 @@ export class CustomersService {
         `current pk is: ${currentPK}`,
         this.getPrimaryKey.name,
         session,
-        account.id
+        account.id,
       );
       return currentPK;
     } else {
@@ -3524,7 +3524,7 @@ export class CustomersService {
         `pk isnt working so set as email`,
         this.getPrimaryKey.name,
         session,
-        account.id
+        account.id,
       );
       //to do just for testing
       currentPK = 'email';
@@ -3547,7 +3547,7 @@ export class CustomersService {
     account: Account,
     session: string,
     count: number,
-    intermediateCollection: string
+    intermediateCollection: string,
   ) {
     const { eventName, comparisonType, value, time, additionalProperties } =
       statement;
@@ -3558,42 +3558,42 @@ export class CustomersService {
       'In customersEventStatement/n\n',
       this.customersFromEventStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `value is: ${value}`,
       this.customersFromEventStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `here are time and additional properties if they exist`,
       this.customersFromEventStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       JSON.stringify(time, null, 2),
       this.customersFromEventStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       JSON.stringify(additionalProperties, null, 2),
       this.customersFromEventStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `comparison type is: ${comparisonType}`,
       this.customersFromEventStatement.name,
       session,
-      account.id
+      account.id,
     );
     // ****
     const mongoQuery: any = {
@@ -3650,20 +3650,20 @@ export class CustomersService {
       'mongo query is/n\n',
       this.customersFromEventStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       JSON.stringify(mongoQuery, null, 2),
       this.customersFromEventStatement.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       `creating collection`,
       this.customersFromEventStatement.name,
       session,
-      account.id
+      account.id,
     );
     this.connection.db.collection(intermediateCollection);
 
@@ -3674,7 +3674,7 @@ export class CustomersService {
         'in the aggregate construction - has performed',
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
 
       const aggregationPipeline: any[] = [
@@ -3709,20 +3709,19 @@ export class CustomersService {
         'aggregate query is/n\n',
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
 
       this.debug(
         JSON.stringify(aggregationPipeline, null, 2),
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
 
       //fetch users here
-      const result: any = await this.eventsService.getCustomersbyEventsMongo(
-        aggregationPipeline
-      );
+      const result: any =
+        await this.eventsService.getCustomersbyEventsMongo(aggregationPipeline);
       /*
       * Example result is: 
       [
@@ -3774,7 +3773,7 @@ export class CustomersService {
         'in the aggregate construction - has performed',
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
 
       //first check
@@ -3789,20 +3788,19 @@ export class CustomersService {
           },
         },
       ];
-      const check = await this.eventsService.getCustomersbyEventsMongo(
-        checkEventExists
-      );
+      const check =
+        await this.eventsService.getCustomersbyEventsMongo(checkEventExists);
       this.debug(
         'the check is',
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
       this.debug(
         JSON.stringify(check, null, 2),
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
 
       if (check.length < 1) {
@@ -3810,7 +3808,7 @@ export class CustomersService {
           'no events of this name',
           this.customersFromEventStatement.name,
           session,
-          account.id
+          account.id,
         ); //the event does not exist, so we should return all customers
         const allUsers = [
           {
@@ -3866,7 +3864,7 @@ export class CustomersService {
         'event exists',
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
       // double lookup, first find users who perform id, then filter them out
       const aggregationPipeline: any[] = [
@@ -3941,32 +3939,31 @@ export class CustomersService {
         'aggregate query is/n\n',
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
 
       this.debug(
         JSON.stringify(aggregationPipeline, null, 2),
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
 
-      const result = await this.eventsService.getCustomersbyEventsMongo(
-        aggregationPipeline
-      );
+      const result =
+        await this.eventsService.getCustomersbyEventsMongo(aggregationPipeline);
 
       this.debug(
         'Here are the results',
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
 
       this.debug(
         JSON.stringify(result, null, 2),
         this.customersFromEventStatement.name,
         session,
-        account.id
+        account.id,
       );
 
       return intermediateCollection;
@@ -4060,18 +4057,18 @@ export class CustomersService {
     session: string,
     customer?: CustomerDocument,
     customerId?: string,
-    options?: QueryOptions
+    options?: QueryOptions,
     //customerKeys?: { key: string, type: AttributeType }[]
   ) {
     this.debug(
       'in checkCustomerMatchesQuery',
       this.checkCustomerMatchesQuery.name,
       session,
-      account.id
+      account.id,
     );
     if (!customerId && !customer) {
       throw new Error(
-        "At least one of 'customerId' or 'customer' must be provided."
+        "At least one of 'customerId' or 'customer' must be provided.",
       );
     }
     if (customerId && !customer) {
@@ -4087,20 +4084,20 @@ export class CustomersService {
       `the query is: ${JSON.stringify(query, null, 2)}`,
       this.checkCustomerMatchesQuery.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       `the customer is: ${JSON.stringify(customer, null, 2)}`,
       this.checkCustomerMatchesQuery.name,
       session,
-      account.id
+      account.id,
     );
     if (query.type === 'all') {
       this.debug(
         'the query has all (AND',
         this.checkCustomerMatchesQuery.name,
         session,
-        account.id
+        account.id,
       );
       // 'all' logic: All conditions must be satisfied
       if (!query.statements || query.statements.length === 0) {
@@ -4114,9 +4111,9 @@ export class CustomersService {
             customer,
             statement,
             account,
-            session
+            session,
           );
-        })
+        }),
       );
       return results.every((result) => result);
     } else if (query.type === 'any') {
@@ -4124,7 +4121,7 @@ export class CustomersService {
         'the query has any (OR)',
         this.checkCustomerMatchesQuery.name,
         session,
-        account.id
+        account.id,
       );
       // 'any' logic: At least one condition must be satisfied
       if (!query.statements || query.statements.length === 0) {
@@ -4138,9 +4135,9 @@ export class CustomersService {
             customer,
             statement,
             account,
-            session
+            session,
           );
-        })
+        }),
       );
       return results.some((result) => result);
     } else {
@@ -4149,11 +4146,11 @@ export class CustomersService {
         `shouldnt get here, what is query type?: ${JSON.stringify(
           query.type,
           null,
-          2
+          2,
         )}`,
         this.checkCustomerMatchesQuery.name,
         session,
-        account.id
+        account.id,
       );
     }
     return false;
@@ -4164,7 +4161,7 @@ export class CustomersService {
     statement: any,
     account: Account,
     session: string,
-    options?: QueryOptions
+    options?: QueryOptions,
   ): Promise<boolean> {
     if (statement.statements && statement.statements.length > 0) {
       // Statement has a subquery, recursively evaluate the subquery
@@ -4172,14 +4169,14 @@ export class CustomersService {
         statement,
         account,
         session,
-        customer
+        customer,
       );
     } else {
       return await this.evaluateSingleStatement(
         customer,
         statement,
         account,
-        session
+        session,
       );
     }
   }
@@ -4197,7 +4194,7 @@ export class CustomersService {
     customer: CustomerDocument,
     statement: any,
     account: Account,
-    session: string
+    session: string,
   ): Promise<boolean> {
     const {
       key,
@@ -4211,48 +4208,48 @@ export class CustomersService {
       'NB this function takes in single statements not full queries, for full queries use customerMatchesQuery/n\n',
       this.evaluateSingleStatement.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       'In evaluateSingleStatement deciding which sub evaluate statement to go to next/n\n',
       this.evaluateSingleStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `the query is: ${JSON.stringify(statement, null, 2)}`,
       this.evaluateSingleStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `the type is: ${JSON.stringify(type, null, 2)}`,
       this.evaluateSingleStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `the key is: ${key}`,
       this.evaluateSingleStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `value is: ${value}`,
       this.evaluateSingleStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       `the subComparisonValue is: ${subComparisonValue}`,
       this.evaluateSingleStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     switch (type) {
@@ -4261,14 +4258,14 @@ export class CustomersService {
           customer,
           statement,
           account,
-          session
+          session,
         );
       case 'Event':
         return await this.evaluateEventStatement(
           customer,
           statement,
           account,
-          session
+          session,
         );
       case 'Email':
         return this.evaluateMessageStatement(
@@ -4276,7 +4273,7 @@ export class CustomersService {
           statement,
           account,
           'Email',
-          session
+          session,
         );
       case 'Push':
         return this.evaluateMessageStatement(
@@ -4284,7 +4281,7 @@ export class CustomersService {
           statement,
           account,
           'Push',
-          session
+          session,
         );
       case 'SMS':
         return this.evaluateMessageStatement(
@@ -4292,7 +4289,7 @@ export class CustomersService {
           statement,
           account,
           'SMS',
-          session
+          session,
         );
       case 'In-app message':
         return this.evaluateMessageStatement(
@@ -4300,7 +4297,7 @@ export class CustomersService {
           statement,
           account,
           'In-app message',
-          session
+          session,
         );
       case 'Segment':
         break;
@@ -4360,26 +4357,26 @@ export class CustomersService {
     statement: any,
     account: Account,
     typeOfMessage: string,
-    session: string
+    session: string,
   ): Promise<boolean> {
     const userId = (<Account>account).id;
     this.debug(
       'In evaluate message statement',
       this.evaluateMessageStatement.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       `the type of message is: ${typeOfMessage}`,
       this.evaluateMessageStatement.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       `account id is: ${userId}`,
       this.evaluateMessageStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     const {
@@ -4465,7 +4462,7 @@ export class CustomersService {
         `the final SQL query is:\n ${sqlQuery}`,
         this.evaluateMessageStatement.name,
         session,
-        account.id
+        account.id,
       );
 
       //const testQuery = "SELECT COUNT(*) FROM message_status" ;
@@ -4490,7 +4487,7 @@ export class CustomersService {
             'Completed!',
             this.evaluateMessageStatement.name,
             session,
-            account.id
+            account.id,
           );
           resolve(0);
         });
@@ -4523,7 +4520,7 @@ export class CustomersService {
     customer: CustomerDocument,
     statement: any,
     account: Account,
-    session: string
+    session: string,
   ): Promise<boolean> {
     const { eventName, comparisonType, value, time, additionalProperties } =
       statement;
@@ -4540,31 +4537,31 @@ export class CustomersService {
       'In evaluateEventStatement/n\n',
       this.evaluateEventStatement.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       'here are time and additional properties (if they exist)',
       this.evaluateEventStatement.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       JSON.stringify(time, null, 2),
       this.evaluateEventStatement.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       JSON.stringify(additionalProperties, null, 2),
       this.evaluateEventStatement.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       `comparison type is: ${comparisonType}`,
       this.evaluateEventStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
@@ -4585,7 +4582,7 @@ export class CustomersService {
         `current pk is: ${currentPK}`,
         this.evaluateEventStatement.name,
         session,
-        account.id
+        account.id,
       );
       mongoQuery.correlationKey = currentPK;
       mongoQuery.correlationValue = customer[currentPK];
@@ -4656,20 +4653,20 @@ export class CustomersService {
       'mongo query is/n\n',
       this.evaluateEventStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     this.debug(
       JSON.stringify(mongoQuery, null, 2),
       this.evaluateEventStatement.name,
       session,
-      account.id
+      account.id,
     );
 
     if (comparisonType === 'has performed') {
       return (await this.eventsService.getEventsByMongo(
         mongoQuery,
-        customer
+        customer,
       )) >= value
         ? true
         : false;
@@ -4688,14 +4685,14 @@ export class CustomersService {
     customer: CustomerDocument,
     statement: any,
     account: Account,
-    session: string
+    session: string,
   ): boolean {
     //console.log('In evaluateAttributeStatement/n\n');
 
     this.debug(
       'In evaluateAttributeStatement/n\n',
       this.evaluateAttributeStatement.name,
-      session
+      session,
     );
 
     const {
@@ -4710,19 +4707,19 @@ export class CustomersService {
     this.debug(
       JSON.stringify(statement, null, 2),
       this.evaluateAttributeStatement.name,
-      session
+      session,
     );
 
     this.debug(
       `value is: ${value}`,
       this.evaluateAttributeStatement.name,
-      session
+      session,
     );
 
     this.debug(
       `value type is: ${typeof value}`,
       this.evaluateAttributeStatement.name,
-      session
+      session,
     );
 
     if (!(key in customer)) {
@@ -4735,12 +4732,12 @@ export class CustomersService {
       this.debug(
         'apparently the customer does not have the key',
         this.evaluateAttributeStatement.name,
-        session
+        session,
       );
       this.debug(
         JSON.stringify(customer, null, 2),
         this.evaluateAttributeStatement.name,
-        session
+        session,
       );
       return false;
     }
@@ -4750,13 +4747,13 @@ export class CustomersService {
     this.debug(
       `the customerValue is: ${customerValue}`,
       this.evaluateAttributeStatement.name,
-      session
+      session,
     );
 
     this.debug(
       `the customerValue type is: ${typeof customerValue}`,
       this.evaluateAttributeStatement.name,
-      session
+      session,
     );
 
     // Perform comparison based on comparisonType
@@ -4764,7 +4761,7 @@ export class CustomersService {
     this.debug(
       `comparison type is: ${comparisonType}`,
       this.evaluateAttributeStatement.name,
-      session
+      session,
     );
     // to do correctValueType - we need customer values to be updated first
     switch (comparisonType) {
@@ -4867,19 +4864,19 @@ export class CustomersService {
       'In Test Customer Segment',
       this.testCustomerInSegment.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       'test query is',
       this.testCustomerInSegment.name,
       session,
-      account.id
+      account.id,
     );
     this.debug(
       JSON.stringify(query, null, 2),
       this.testCustomerInSegment.name,
       session,
-      account.id
+      account.id,
     );
 
     console.log('here here');
@@ -4901,7 +4898,7 @@ export class CustomersService {
       JSON.stringify(testCustomer, null, 2),
       this.testCustomerInSegment.name,
       session,
-      account.id
+      account.id,
     );
 
     console.log('here here 3');
@@ -4913,7 +4910,7 @@ export class CustomersService {
       'fake session',
       true,
       0,
-      'test_collection'
+      'test_collection',
     );
     console.log('the result of the eventCust is', eventCust); //JSON.stringify(eventCust, null, 2));
 
@@ -4923,11 +4920,11 @@ export class CustomersService {
         query,
         account,
         'fake session',
-        testCustomer
+        testCustomer,
       );
     console.log(
       'the result of the evaluation is',
-      resultOfCheckCustomerMatchesQuery
+      resultOfCheckCustomerMatchesQuery,
     );
 
     //console.log("test customer is", JSON.stringify(testCustomer,null,2));
@@ -4955,7 +4952,7 @@ export class CustomersService {
     account: Account,
     take = 100,
     skip = 0,
-    search = ''
+    search = '',
   ): Promise<{
     data: { id: string; email: string; phone: string }[];
     totalPages: number;
@@ -4984,7 +4981,7 @@ export class CustomersService {
       query['$or'] = deviceTokenConditions['$or'];
     }
 
-    const totalCustomers = await this.CustomerModel.count(query).exec();
+    const totalCustomers = await this.CustomerModel.countDocuments(query).exec();
     const totalPages = Math.ceil(totalCustomers / take) || 1;
 
     const customers = await this.CustomerModel.find(query)
@@ -5014,14 +5011,14 @@ export class CustomersService {
     key: string,
     type: AttributeType,
     dateFormat: unknown,
-    session?: string
+    session?: string,
   ) {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
     try {
       if (!Object.values(AttributeType).includes(type)) {
         throw new BadRequestException(
-          `Type: ${type} can't be used for attribute creation.`
+          `Type: ${type} can't be used for attribute creation.`,
         );
       }
 
@@ -5037,7 +5034,7 @@ export class CustomersService {
       if (previousKey) {
         throw new HttpException(
           'Similar key already exist, please use different name or type',
-          503
+          503,
         );
       }
 
@@ -5057,7 +5054,7 @@ export class CustomersService {
 
   async updateAttribute(
     account: Account,
-    updateAttributeDto: UpdateAttributeDto
+    updateAttributeDto: UpdateAttributeDto,
   ) {
     validateKeyForMutations(updateAttributeDto.key);
 
@@ -5082,7 +5079,7 @@ export class CustomersService {
         $rename: {
           [attributeInDb.key]: key.trim(),
         },
-      }
+      },
     );
 
     await attributeInDb.updateOne({
@@ -5112,14 +5109,14 @@ export class CustomersService {
         $unset: {
           [attributeInDb.key]: '',
         },
-      }
+      },
     );
     await attributeInDb.deleteOne();
   }
 
   async modifyAttributes(
     account: Account,
-    modifyAttributes: ModifyAttributesDto
+    modifyAttributes: ModifyAttributesDto,
   ) {
     const { created, updated, deleted } = modifyAttributes;
 
@@ -5158,7 +5155,7 @@ export class CustomersService {
     value: string,
     convertTo: AttributeType,
     columnName: string,
-    dateFormat?: string
+    dateFormat?: string,
   ) {
     let error = '';
     let isError = false;
@@ -5179,8 +5176,8 @@ export class CustomersService {
       converted = acceptableBooleanConvertable.true.includes(value)
         ? true
         : acceptableBooleanConvertable.false.includes(value)
-        ? false
-        : null;
+          ? false
+          : null;
     } else if (
       convertTo === AttributeType.DATE ||
       convertTo === AttributeType.DATE_TIME
@@ -5221,7 +5218,7 @@ export class CustomersService {
   async countImportPreview(
     account: Account,
     settings: ImportCustomersDTO,
-    session: string
+    session: string,
   ) {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -5237,7 +5234,7 @@ export class CustomersService {
       if (!fileData) {
         throw new HttpException(
           'File for analysis is missing, check if you have file uploaded.',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -5252,13 +5249,13 @@ export class CustomersService {
       });
 
       const primaryArr = Object.values(clearedMapping).filter(
-        (el) => el.isPrimary
+        (el) => el.isPrimary,
       );
 
       if (primaryArr.length !== 1) {
         throw new HttpException(
           'Primary key should be defined and should be selected only one.',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -5277,7 +5274,7 @@ export class CustomersService {
       ) {
         throw new HttpException(
           'Field selected as primary not corresponding to saved primary Key',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -5305,7 +5302,7 @@ export class CustomersService {
       if (docs?.length) {
         throw new HttpException(
           "Selected primary key can't be used cause it's value has duplicates among already existing users.",
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -5333,7 +5330,7 @@ export class CustomersService {
         skipped: number;
       }>(async (resolve, reject) => {
         const s3CSVStream = await this.s3Service.getImportedCSVReadStream(
-          fileData.fileKey
+          fileData.fileKey,
         );
         let created = 0;
         let updated = 0;
@@ -5353,7 +5350,7 @@ export class CustomersService {
                 data[el],
                 clearedMapping[el].asAttribute.type,
                 el,
-                clearedMapping[el].asAttribute.dateFormat
+                clearedMapping[el].asAttribute.dateFormat,
               );
 
               if (convertResult.error) {
@@ -5369,7 +5366,7 @@ export class CustomersService {
             if (skippedReason) {
               skipped++;
               writeErrorsStream.write(
-                this.formatErrorData(data, skippedReason)
+                this.formatErrorData(data, skippedReason),
               );
               return;
             } else {
@@ -5381,11 +5378,11 @@ export class CustomersService {
                     const { createdCount, updatedCount } =
                       await this.countCreateUpdateWithBatch(
                         passedPK.asAttribute.key,
-                        Array.from(currentBatch)
+                        Array.from(currentBatch),
                       );
                     created += createdCount;
                     updated += updatedCount;
-                  })()
+                  })(),
                 );
                 currentBatch = [];
               }
@@ -5398,11 +5395,11 @@ export class CustomersService {
                   const { createdCount, updatedCount } =
                     await this.countCreateUpdateWithBatch(
                       passedPK.asAttribute.key,
-                      Array.from(currentBatch)
+                      Array.from(currentBatch),
                     );
                   created += createdCount;
                   updated += updatedCount;
-                })()
+                })(),
               );
               currentBatch = [];
             }
@@ -5411,7 +5408,7 @@ export class CustomersService {
 
             writeErrorsStream.end();
             await new Promise((resolve2) =>
-              writeErrorsStream.on('finish', resolve2)
+              writeErrorsStream.on('finish', resolve2),
             );
 
             resolve({ created, updated, skipped });
@@ -5435,7 +5432,7 @@ export class CustomersService {
 
         uploadResult =
           (await this.s3Service.uploadCustomerImportPreviewErrorsFile(
-            fileForUpload
+            fileForUpload,
           )) as string;
       }
 
@@ -5452,7 +5449,7 @@ export class CustomersService {
   async startImport(
     account: Account,
     settings: ImportCustomersDTO,
-    session: string
+    session: string,
   ) {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -5467,7 +5464,7 @@ export class CustomersService {
       if (!fileData) {
         throw new HttpException(
           'File for analysis is missing, check if you have file uploaded.',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -5482,13 +5479,13 @@ export class CustomersService {
       });
 
       const primaryArr = Object.values(clearedMapping).filter(
-        (el) => el.isPrimary
+        (el) => el.isPrimary,
       );
 
       if (primaryArr.length !== 1) {
         throw new HttpException(
           'Primary key should be defined and should be selected only one.',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -5507,7 +5504,7 @@ export class CustomersService {
       ) {
         throw new HttpException(
           'Field selected as primary not corresponding to saved primary Key',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -5535,7 +5532,7 @@ export class CustomersService {
       if (docs?.length) {
         throw new HttpException(
           "Selected primary key can't be used cause it's value has duplicates among already existing users.",
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -5551,13 +5548,13 @@ export class CustomersService {
           },
           {
             new: true,
-          }
+          },
         ).exec();
 
         if (!afterSaveNewPK) {
           throw new HttpException(
             "Couldn't save selected primary key.",
-            HttpStatus.BAD_REQUEST
+            HttpStatus.BAD_REQUEST,
           );
         }
       }
@@ -5574,7 +5571,7 @@ export class CustomersService {
             resources: {},
             type: SegmentType.MANUAL,
           },
-          session
+          session,
         );
         segmentId = data.id;
       }
@@ -5599,7 +5596,7 @@ export class CustomersService {
   async updatePrimaryKey(
     account: Account,
     update: UpdatePK_DTO,
-    session: string
+    session: string,
   ) {
     const workspace = account?.teams?.[0]?.organization?.workspaces?.[0];
 
@@ -5636,7 +5633,7 @@ export class CustomersService {
     if (docsDuplicates?.length) {
       throw new HttpException(
         "Selected primary key can't be used because of duplicated or missing values. Primary key values must exist and be unique",
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -5653,7 +5650,7 @@ export class CustomersService {
     if (!newPK) {
       throw new HttpException(
         'Passed attribute for new PK not exist, please check again or select another one.',
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -5684,7 +5681,7 @@ export class CustomersService {
       await clientSession.abortTransaction();
       throw new HttpException(
         'Error while performing operation, please try again.',
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
     await clientSession.commitTransaction();

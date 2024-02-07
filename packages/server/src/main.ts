@@ -13,6 +13,7 @@ import { ProfilingIntegration } from '@sentry/profiling-node';
 Sentry.init({
   dsn: process.env.SENTRY_DSN_URL_BACKEND,
   release: process.env.SENTRY_RELEASE,
+  // @ts-ignore
   integrations: [new ProfilingIntegration()],
   // Performance Monitoring
   tracesSampleRate: 1.0, // Capture 100% of the transactions, reduce in production!

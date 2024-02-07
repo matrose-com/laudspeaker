@@ -191,7 +191,7 @@ export class WebhooksService {
       key,
       payload,
       signature,
-      timestamp
+      timestamp,
     );
 
     if (!validSignature) throw new ForbiddenException('Invalid signature');
@@ -316,7 +316,7 @@ export class WebhooksService {
         };
       };
     },
-    session: string
+    session: string,
   ) {
     const {
       timestamp: signatureTimestamp,
@@ -355,7 +355,7 @@ export class WebhooksService {
     this.debug(
       `${JSON.stringify({ webhook: body })}`,
       this.processMailgunData.name,
-      session
+      session,
     );
 
     if (!stepId || !customerId || !templateId || !id) return;
@@ -376,7 +376,7 @@ export class WebhooksService {
     this.debug(
       `${JSON.stringify({ clickhouseMessage: clickHouseRecord })}`,
       this.processMailgunData.name,
-      session
+      session,
     );
 
     await this.insertMessageStatusToClickhouse([clickHouseRecord], session);
@@ -384,7 +384,7 @@ export class WebhooksService {
 
   public async setupMailgunWebhook(
     mailgunAPIKey: string,
-    sendingDomain: string
+    sendingDomain: string,
   ) {
     const mailgun = new Mailgun(formData);
     const mg = mailgun.client({
@@ -401,7 +401,8 @@ export class WebhooksService {
           await mg.webhooks.create(
             sendingDomain,
             webhookToInstall,
-            process.env.MAILGUN_WEBHOOK_ENDPOINT
+            process.env.MAILGUN_WEBHOOK_ENDPOINT,
+            false,
           );
           installedWebhooks = await mg.webhooks.list(sendingDomain, {});
         }

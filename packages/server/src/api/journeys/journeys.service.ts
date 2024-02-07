@@ -1018,7 +1018,7 @@ export class JourneysService {
           ...journey,
           latestChanger: null,
           latestChangerEmail: journey.latestChanger?.email,
-          enrolledCustomers: await this.CustomerModel.count({
+          enrolledCustomers: await this.CustomerModel.countDocuments({
             journeys: journey.id,
           }),
         }))

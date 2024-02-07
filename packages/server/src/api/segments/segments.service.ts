@@ -817,7 +817,7 @@ export class SegmentsService {
         );
       }
 
-      const amount = await this.customersService.CustomerModel.count({
+      const amount = await this.customersService.CustomerModel.countDocuments({
         workspaceId: workspace.id,
       });
 
